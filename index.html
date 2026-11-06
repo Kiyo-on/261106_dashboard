@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chemical 모니터링 이력관리</title>
+<style>
+:root{--bg:#f4f6f9;--card:#fff;--ink:#1c2430;--sub:#667085;--line:#e2e6ec;--accent:#2563eb;--accent-ink:#fff;--open:#d97706;--open-bg:#fef3c7;--done:#15803d;--done-bg:#dcfce7;--bar:#3b82f6;--danger:#dc2626}
+@media (prefers-color-scheme:dark){:root{--bg:#0f141b;--card:#18202b;--ink:#e6ebf2;--sub:#93a0b2;--line:#2a3544;--accent:#4f8cff;--accent-ink:#06142e;--open:#fbbf24;--open-bg:#3a2d0b;--done:#4ade80;--done-bg:#12301d;--bar:#5b9bff;--danger:#f87171}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 "Malgun Gothic","Apple SD Gothic Neo",system-ui,sans-serif}
+header{display:flex;flex-wrap:wrap;align-items:center;gap:12px;padding:12px 20px;background:var(--card);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+h1{font-size:17px;margin:0 12px 0 0}
+nav{display:flex;gap:4px}
+nav button{border:0;background:none;color:var(--sub);padding:8px 14px;border-radius:8px;cursor:pointer;font:inherit;font-weight:600}
+nav button.on{background:var(--accent);color:var(--accent-ink)}
+.sp{flex:1}
+main{max-width:1200px;margin:0 auto;padding:20px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:16px}
+.card h2{font-size:15px;margin:0 0 12px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.kpi b{display:block;font-size:26px;line-height:1.2}
+.kpi span{color:var(--sub);font-size:12px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:800px){.grid2{grid-template-columns:1fr}}
+button.btn,.btn{border:1px solid var(--line);background:var(--card);color:var(--ink);padding:7px 12px;border-radius:8px;cursor:pointer;font:inherit}
+.btn.pri{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
+.btn.dng{color:var(--danger)}
+input,select,textarea{font:inherit;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:7px 9px;max-width:100%}
+textarea{width:100%;min-height:150px;font-family:Consolas,monospace;font-size:12px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}
+table{width:100%;border-collapse:collapse}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;color:var(--sub);white-space:nowrap}
+td.c{white-space:pre-wrap;word-break:break-word;min-width:260px}
+.tbl{overflow-x:auto}
+.badge{display:inline-block;padding:1px 9px;border-radius:99px;font-size:12px;font-weight:600;white-space:nowrap}
+.badge.o{background:var(--open-bg);color:var(--open)}
+.badge.d{background:var(--done-bg);color:var(--done)}
+.badge.cat{background:var(--line);color:var(--ink);font-weight:500}
+.badge.cat.man{outline:1.5px solid var(--accent)}
+:root{--c0:#2563eb;--c1:#dc2626;--c2:#16a34a;--c3:#d97706;--c4:#7c3aed;--c5:#0891b2;--c6:#db2777;--c7:#64748b}
+@media (prefers-color-scheme:dark){:root{--c0:#60a5fa;--c1:#f87171;--c2:#4ade80;--c3:#fbbf24;--c4:#a78bfa;--c5:#22d3ee;--c6:#f472b6;--c7:#94a3b8}}
+.legend{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.lg{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:99px;padding:3px 12px;cursor:pointer;font:inherit;font-size:12px}
+.lg i{width:10px;height:10px;border-radius:3px;display:inline-block}
+.lg.off{opacity:.45;text-decoration:line-through}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.chip{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:99px;padding:3px 12px;cursor:pointer;font:inherit;font-size:12px}
+.chip.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.chip b{margin-left:4px}
+.hb{display:grid;grid-template-columns:130px 1fr 40px;gap:8px;align-items:center;margin:5px 0;cursor:pointer}
+.hb .t{height:16px;background:var(--line);border-radius:4px;overflow:hidden}
+.hb .t i{display:block;height:100%;background:var(--bar)}
+.hb .n{text-align:right;font-weight:600}
+.hb .l{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.muted{color:var(--sub)}
+.drop{border:2px dashed var(--line);border-radius:12px;padding:24px;text-align:center;color:var(--sub);margin-bottom:12px}
+.drop.hov{border-color:var(--accent);background:var(--open-bg)}
+.map{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin:10px 0}
+.map label{display:block;font-size:12px;color:var(--sub)}
+.map select{width:100%}
+dialog{border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--ink);width:min(560px,94vw);padding:20px}
+dialog::backdrop{background:rgba(0,0,0,.45)}
+dialog label{display:block;margin:10px 0 3px;font-size:12px;color:var(--sub)}
+dialog input,dialog textarea{width:100%}
+dialog textarea{min-height:120px;font-family:inherit;font-size:14px}
+.msg{padding:10px 14px;border-radius:8px;background:var(--done-bg);color:var(--done);margin-bottom:12px;font-weight:600}
+.hide{display:none}
+</style>
+</head>
+<body>
+<header>
+  <h1>🧪 Chemical 모니터링 이력관리</h1>
+  <nav>
+    <button data-v="dash" class="on">대시보드</button>
+    <button data-v="hist">이력 조회</button>
+    <button data-v="imp">가져오기</button>
+    <button data-v="set">백업/설정</button>
+  </nav>
+  <span class="sp"></span>
+  <button class="btn pri" id="addBtn">+ 직접 입력</button>
+</header>
+<main>
+  <section id="v-dash"></section>
+  <section id="v-hist" class="hide"></section>
+  <section id="v-imp" class="hide"></section>
+  <section id="v-set" class="hide"></section>
+</main>
+
+<dialog id="dlg">
+  <form method="dialog" id="dlgForm">
+    <h2 id="dlgTitle" style="margin:0 0 6px;font-size:16px"></h2>
+    <label>날짜</label><input type="date" id="fDate" required>
+    <label>설비명</label><input id="fEquip" list="equipList" required>
+    <label>현재상태</label><input id="fStatus" list="statusList" placeholder="예: 진행중 / 조치완료">
+    <label>내용 (특이사항 · 조치방안)</label><textarea id="fContent" required></textarea>
+    <label>현상 분류 (특이사항)</label><select id="fCat" style="width:100%"></select>
+    <label>조치방법 분류 (조치 전이면 공란)</label><select id="fAct" style="width:100%"></select>
+    <div id="fHistory"class="muted" style="font-size:12px;margin-top:8px"></div>
+    <div class="row" style="margin:16px 0 0">
+      <button type="button" class="btn dng" id="fDel">삭제</button><span class="sp"></span>
+      <button type="button" class="btn" id="fCancel">취소</button>
+      <button type="submit" class="btn pri" id="fSave">저장</button>
+    </div>
+  </form>
+</dialog>
+<datalist id="equipList"></datalist><datalist id="statusList"></datalist>
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script>
+const LS='chemMonitorDB_v1';
+const DEF_DONE='완료,종결,해결,정상,close,done,complete';
+// 자동 분류 기본 규칙: "분류명: 키워드, 키워드 ..." (한 줄에 한 분류). 동점이면 위쪽 분류 우선.
+const mkRules=a=>a.map(x=>x[0]+': '+x[1]).join('\n');
+// 현상: 내용의 첫 줄(최초 발생 내용)만 보고 판정
+const DEF_PHEN=mkRules([
+ ['감도·Signal 저하/Drift','감도,drift,신호,회수율,internal standard,is,rsd,급감'],
+ ['간섭·검량 이상','검량,r²,간섭,bec,collision,매질'],
+ ['시료 도입 불량(흡입·막힘·배수)','autosampler,흡입,막힘,배수,drain,probe,spray chamber,pump,소음'],
+ ['Plasma 불안정·점화 불량','plasma,점화,소등,reflected,rf,torch'],
+ ['유량·압력·온도 이상','압력,유량,온도,알람,chiller,cooling,ar gas,he gas,mfc,변동'],
+ ['통신·소프트웨어 오류','통신,소프트웨어,라이선스,저장,에러,pc'],
+ ['Blank·농도 상승(오염)','blank,농도,spike,상승,오염,carry-over,carryover,잔류,편차,용출,컨테이너']
+]);
+// 조치방법: 조치가 적힌 줄에서 판정(요청·협의·예정 등이 있는 줄은 제외). 안 맞으면 공란
+const DEF_ACT=mkRules([
+ ['부품·소모품 교체','교체,replace'],
+ ['설정·조건 조정','조건 변경,설정,보정,조정,최적화,튜닝,tuning,장력,윤활,연장,단축,레시피'],
+ ['세정·Flushing·Purge','세정,flushing,초음파,세척,air 빼기,purge'],
+ ['시료·표준액 재준비','재조제,재작성,재샘플링,재채취,lot'],
+ ['재가동·재연결','재시작,재체결,재활성화,재점화,재장착,케이블'],
+ ['절차·교육 개선','교육,기준 공유'],
+ ['점검 후 이상 없음','점검,이상 없음']
+]);
+let db={records:[],settings:{doneWords:DEF_DONE}};
+try{const s=localStorage.getItem(LS);if(s){const p=JSON.parse(s);db.records=p.records||[];db.settings=Object.assign(db.settings,p.settings||{})}}catch(e){}
+function save(){try{localStorage.setItem(LS,JSON.stringify(db))}catch(e){alert('브라우저 저장에 실패했습니다. 백업 파일을 내보내 주세요.\n'+e.message)}}
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const norm=s=>String(s??'').replace(/\s+/g,' ').trim();
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+// 같은 건 판정: 날짜+설비+내용의 첫 줄(최초 발생 내용). 내용이 아래로 쌓여도 같은 건으로 인식
+const keyOf=(d,e,c)=>[d,norm(e).toLowerCase(),norm(String(c??'').split('\n')[0]).toLowerCase()].join('|');
+const doneWords=()=>db.settings.doneWords.split(',').map(s=>s.trim().toLowerCase()).filter(Boolean);
+const isOpen=r=>{const s=norm(r.status).toLowerCase();return !doneWords().some(w=>s.includes(w))};
+/* ---------- 자동 분류 (현상 / 조치방법) ---------- */
+const OTHER='기타';
+const PENDING=/요청|협의|조율|예정|필요|전까지|검토/;   // 아직 하지 않은 일이 적힌 줄은 조치로 보지 않음
+const _rc={};
+function rulesOf(key,def){
+  const t=db.settings[key]||def;
+  if(_rc[key]&&_rc[key].t===t)return _rc[key].c;
+  const c=t.split('\n').map(l=>{const i=l.indexOf(':');if(i<1)return null;
+    const ws=l.slice(i+1).split(',').map(w=>w.trim().toLowerCase()).filter(Boolean);
+    return {name:l.slice(0,i).trim(),ws:ws.map(w=>/^[\x20-\x7e]+$/.test(w)?{re:new RegExp('(?<![a-z0-9])'+w.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'(?![a-z0-9])')}:{s:w})}}).filter(Boolean);
+  _rc[key]={t,c};return c;
+}
+const phenRules=()=>rulesOf('phenRules',DEF_PHEN),actRules=()=>rulesOf('actRules',DEF_ACT);
+const phenNames=()=>phenRules().map(c=>c.name).concat(OTHER),actNames=()=>actRules().map(c=>c.name);
+function bestOf(rules,text,none){   // 키워드가 가장 많이 들어 있는 분류(동점이면 위쪽), 없으면 none
+  let best=none,bs=0;
+  for(const c of rules){let s=0;for(const w of c.ws)if(w.re?w.re.test(text):text.includes(w.s))s++;if(s>bs){bs=s;best=c.name}}
+  return best;
+}
+const autoPhen=r=>bestOf(phenRules(),String(r.content||'').split('\n')[0].toLowerCase(),OTHER);
+const autoAct=r=>bestOf(actRules(),String(r.content||'').split('\n').filter(l=>l.trim()&&!PENDING.test(l)).join('\n').toLowerCase(),'');
+const phenOf=r=>r.cat&&phenNames().includes(r.cat)?r.cat:autoPhen(r);
+const actOf=r=>r.act==='__none'?'':(r.act&&actNames().includes(r.act)?r.act:autoAct(r));
+const phenBadge=r=>`<span class="badge cat${r.cat?' man':''}" title="${r.cat?'수동 지정':'자동 분류'}">${esc(phenOf(r))}</span>`;
+const actBadge=r=>{const a=actOf(r);return a?`<span class="badge cat${r.act&&r.act!=='__none'?' man':''}" title="${r.act&&r.act!=='__none'?'수동 지정':'자동 분류'}">${esc(a)}</span>`:`<span class="muted"${r.act==='__none'?' title="수동 지정: 조치 없음"':''}>—</span>`};
+const badge=r=>`<span class="badge ${isOpen(r)?'o':'d'}">${esc(r.status||'미확인')}</span>`;
+const today=()=>{const d=new Date();return fmtDate(d)};
+function pad(n){return String(n).padStart(2,'0')}
+function fmtDate(d){return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())}
+
+/* ---------- 날짜 변환 ---------- */
+function parseDate(v){
+  if(v==null||v==='')return '';
+  if(v instanceof Date&&!isNaN(v))return fmtDate(new Date(v.getTime()+30000));
+  if(typeof v==='number'&&v>20000&&v<80000){return fmtDate(new Date(Math.round((v-25569)*86400000)+43200000-0)).replace(/^/,'')}
+  let s=String(v).trim(),m;
+  if(m=s.match(/(\d{4})\s*[-./년]\s*(\d{1,2})\s*[-./월]\s*(\d{1,2})/))return m[1]+'-'+pad(+m[2])+'-'+pad(+m[3]);
+  if(m=s.match(/^(\d{4})(\d{2})(\d{2})$/))return m[1]+'-'+m[2]+'-'+m[3];
+  if(m=s.match(/^(\d{2})\s*[-./]\s*(\d{1,2})\s*[-./]\s*(\d{1,2})$/))return '20'+m[1]+'-'+pad(+m[2])+'-'+pad(+m[3]);
+  if(m=s.match(/^(\d{1,2})\s*[/.\-월]\s*(\d{1,2})일?$/))return new Date().getFullYear()+'-'+pad(+m[1])+'-'+pad(+m[2]);
+  return '';
+}
+
+/* ---------- 붙여넣기(TSV) 파서: 따옴표 안의 줄바꿈 지원 ---------- */
+function parseTSV(t){
+  const rows=[];let row=[],cur='',q=false;
+  for(let i=0;i<t.length;i++){
+    const c=t[i];
+    if(q){if(c==='"'){if(t[i+1]==='"'){cur+='"';i++}else q=false}else cur+=c}
+    else if(c==='"'&&cur==='')q=true;
+    else if(c==='\t'){row.push(cur);cur=''}
+    else if(c==='\n'||c==='\r'){if(c==='\r'&&t[i+1]==='\n')i++;row.push(cur);rows.push(row);row=[];cur=''}
+    else cur+=c;
+  }
+  if(cur!==''||row.length){row.push(cur);rows.push(row)}
+  return rows.filter(r=>r.some(x=>norm(x)!==''));
+}
+
+/* ---------- 화면 전환 ---------- */
+let view='dash';
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>show(b.dataset.v));
+function show(v){view=v;document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
+  ['dash','hist','imp','set'].forEach(x=>$('#v-'+x).classList.toggle('hide',x!==v));render()}
+function render(){refreshLists();({dash:rDash,hist:rHist,imp:rImp,set:rSet})[view]()}
+function refreshLists(){
+  const eq=[...new Set(db.records.map(r=>r.equip))].sort(),st=[...new Set(db.records.map(r=>r.status).filter(Boolean))].sort();
+  $('#equipList').innerHTML=eq.map(x=>`<option value="${esc(x)}">`).join('');
+  $('#statusList').innerHTML=st.map(x=>`<option value="${esc(x)}">`).join('');
+}
+
+/* ---------- 대시보드 ---------- */
+let dashEq='',phenEq='';const phenOff=new Set();
+function rDash(){
+  const R=db.records,open=R.filter(isOpen),ym=today().slice(0,7);
+  const eqs=new Set(R.map(r=>r.equip));
+  let h=`<div class="kpis">
+   <div class="kpi"><b>${R.length}</b><span>전체 이력</span></div>
+   <div class="kpi"><b style="color:var(--open)">${open.length}</b><span>미조치(진행중)</span></div>
+   <div class="kpi"><b>${R.filter(r=>r.date.startsWith(ym)).length}</b><span>이번 달 발생</span></div>
+   <div class="kpi"><b>${eqs.size}</b><span>설비 수</span></div></div>`;
+  if(!R.length){$('#v-dash').innerHTML=h+`<div class="card">아직 데이터가 없습니다. <a href="#" id="goImp">가져오기</a> 탭에서 엑셀 파일을 올리거나 내용을 붙여넣어 주세요.</div>`;
+    $('#goImp').onclick=e=>{e.preventDefault();show('imp')};return}
+  // 설비별
+  const cnt={};R.forEach(r=>cnt[r.equip]=(cnt[r.equip]||0)+1);
+  const top=Object.entries(cnt).sort((a,b)=>b[1]-a[1]).slice(0,12),max=top[0][1];
+  h+=`<div class="grid2"><div class="card"><h2>설비별 발생 건수 <span class="muted" style="font-weight:400">(클릭하면 이력 조회)</span></h2>`+
+    top.map(([e,n])=>`<div class="hb" data-eq="${esc(e)}"><span class="l" title="${esc(e)}">${esc(e)}</span><span class="t"><i style="width:${n/max*100}%"></i></span><span class="n">${n}</span></div>`).join('')+`</div>`;
+  // 월별 (최근 12개월)
+  const months=[];const d=new Date();d.setDate(1);
+  for(let i=11;i>=0;i--){const x=new Date(d.getFullYear(),d.getMonth()-i,1);months.push(x.getFullYear()+'-'+pad(x.getMonth()+1))}
+  if(dashEq&&!eqs.has(dashEq))dashEq='';
+  const TR=dashEq?R.filter(r=>r.equip===dashEq):R;
+  const mc=months.map(m=>TR.filter(r=>r.date.startsWith(m)).length),mm=Math.ceil(Math.max(4,...mc)/4)*4;
+  const W=520,H=220,L=30,B=26,bw=(W-L)/12;
+  let svg=`<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="월별 발생 건수">`;
+  for(let g=0;g<=4;g++){const y=H-B-(H-B-14)*g/4;svg+=`<line x1="${L}" x2="${W}" y1="${y}" y2="${y}" stroke="var(--line)"/><text x="${L-5}" y="${y+4}" text-anchor="end" font-size="10" fill="var(--sub)">${Math.round(mm*g/4)}</text>`}
+  mc.forEach((n,i)=>{const bh=(H-B-14)*n/mm,x=L+i*bw+bw*.18;
+    svg+=`<rect x="${x}" y="${H-B-bh}" width="${bw*.64}" height="${bh}" rx="3" fill="var(--bar)"><title>${months[i]}: ${n}건</title></rect>`;
+    if(n)svg+=`<text x="${x+bw*.32}" y="${H-B-bh-4}" text-anchor="middle" font-size="10" fill="var(--ink)">${n}</text>`;
+    svg+=`<text x="${x+bw*.32}" y="${H-8}" text-anchor="middle" font-size="10" fill="var(--sub)">${months[i].slice(2).replace('-','.')}</text>`});
+  h+=`<div class="card"><h2 style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">월별 발생 추이 (최근 12개월)<span class="sp"></span>
+    <select id="trEq" style="font-weight:400"><option value="">전체 설비</option>${[...eqs].sort().map(e=>`<option value="${esc(e)}" ${e===dashEq?'selected':''}>${esc(e)}</option>`).join('')}</select></h2>
+    <div class="muted" style="margin:-4px 0 6px">${dashEq?esc(dashEq)+' · 최근 12개월 '+mc.reduce((a,b)=>a+b,0)+'건':'전체 설비 · 최근 12개월 '+mc.reduce((a,b)=>a+b,0)+'건'}</div>${svg}</svg></div></div>`;
+  // 현상별 월별 발생 추이 (누적 막대)
+  if(phenEq&&!eqs.has(phenEq))phenEq='';
+  const PR=phenEq?R.filter(r=>r.equip===phenEq):R,pn=phenNames();
+  const pm=months.map(m=>{const o={};PR.filter(r=>r.date.startsWith(m)).forEach(r=>{const c=phenOf(r);o[c]=(o[c]||0)+1});return o});
+  const ptot=n=>pm.reduce((a,o)=>a+(o[n]||0),0),pall=pm.reduce((a,o)=>a+Object.values(o).reduce((x,y)=>x+y,0),0);
+  const shown=pn.filter(n=>!phenOff.has(n)),mt=pm.map(o=>shown.reduce((a,n)=>a+(o[n]||0),0)),pmax=Math.ceil(Math.max(4,...mt)/4)*4;
+  const W2=960,H2=240,L2=34,B2=26,bw2=(W2-L2)/12;
+  let s2=`<svg viewBox="0 0 ${W2} ${H2}" width="100%" role="img" aria-label="현상별 월별 발생 추이">`;
+  for(let g=0;g<=4;g++){const y=H2-B2-(H2-B2-16)*g/4;s2+=`<line x1="${L2}" x2="${W2}" y1="${y}" y2="${y}" stroke="var(--line)"/><text x="${L2-6}" y="${y+4}" text-anchor="end" font-size="10" fill="var(--sub)">${pmax*g/4}</text>`}
+  pm.forEach((o,i)=>{let y=H2-B2;const x=L2+i*bw2+bw2*.2;
+    pn.forEach((n,k)=>{if(phenOff.has(n)||!o[n])return;const h=(H2-B2-16)*o[n]/pmax;y-=h;
+      s2+=`<rect x="${x}" y="${y}" width="${bw2*.6}" height="${h}" fill="var(--c${k%8})" stroke="var(--card)" stroke-width="1"><title>${months[i]} · ${esc(n)}: ${o[n]}건</title></rect>`});
+    if(mt[i])s2+=`<text x="${x+bw2*.3}" y="${y-4}" text-anchor="middle" font-size="10" fill="var(--ink)">${mt[i]}</text>`;
+    s2+=`<text x="${x+bw2*.3}" y="${H2-8}" text-anchor="middle" font-size="10" fill="var(--sub)">${months[i].slice(2).replace('-','.')}</text>`});
+  s2+='</svg>';
+  const legend=pn.map((n,k)=>({n,k,t:ptot(n)})).filter(x=>x.t>0).map(x=>`<button type="button" class="lg${phenOff.has(x.n)?' off':''}" data-ph="${esc(x.n)}"><i style="background:var(--c${x.k%8})"></i>${esc(x.n)} <b>${x.t}</b></button>`).join('');
+  h+=`<div class="card"><h2 style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">현상별 월별 발생 추이 (최근 12개월)<span class="sp"></span>
+    <select id="phEq" style="font-weight:400"><option value="">전체 설비</option>${[...eqs].sort().map(e=>`<option value="${esc(e)}" ${e===phenEq?'selected':''}>${esc(e)}</option>`).join('')}</select></h2>
+    <div class="muted" style="margin:-4px 0 8px">${phenEq?esc(phenEq):'전체 설비'} · 최근 12개월 ${pall}건 <span style="margin-left:6px">· 아래 현상 이름을 누르면 그래프에서 숨기거나 다시 보입니다.</span></div>
+    <div class="legend">${legend}</div>${s2}</div>`;
+  // 미조치
+  const ol=open.sort((a,b)=>a.date<b.date?1:-1);
+  h+=`<div class="card"><h2>미조치(진행중) 목록 — ${ol.length}건</h2>`+(ol.length?`<div class="tbl"><table><tr><th>날짜</th><th>설비명</th><th>상태</th><th>내용</th></tr>`+
+    ol.slice(0,50).map(r=>`<tr class="clk" data-id="${r.id}" style="cursor:pointer"><td>${r.date}</td><td>${esc(r.equip)}</td><td>${badge(r)}</td><td class="c">${esc(r.content)}</td></tr>`).join('')+`</table></div>${ol.length>50?'<p class="muted">상위 50건만 표시. 전체는 이력 조회에서 확인하세요.</p>':''}`:`<span class="muted">미조치 건이 없습니다 👍</span>`)+`</div>`;
+  $('#v-dash').innerHTML=h;
+  $('#trEq').onchange=e=>{dashEq=e.target.value;rDash()};
+  $('#phEq').onchange=e=>{phenEq=e.target.value;rDash()};
+  document.querySelectorAll('#v-dash .lg').forEach(b=>b.onclick=()=>{const n=b.dataset.ph;phenOff.has(n)?phenOff.delete(n):phenOff.add(n);rDash()});
+  document.querySelectorAll('#v-dash .hb').forEach(e=>e.onclick=()=>{hf.equip=e.dataset.eq;hf.status='';hf.q='';hf.cat='';hf.act='';show('hist')});
+  document.querySelectorAll('#v-dash tr.clk').forEach(e=>e.onclick=()=>openDlg(e.dataset.id));
+}
+
+/* ---------- 이력 조회 ---------- */
+let hf={q:'',equip:'',status:'',from:'',to:'',cat:'',act:''},limit=300;
+function rHist(){
+  const eqs=[...new Set(db.records.map(r=>r.equip))].sort();
+  $('#v-hist').innerHTML=`<div class="card"><div class="row">
+   <input id="hq" placeholder="내용·설비 검색" value="${esc(hf.q)}" style="flex:1;min-width:180px">
+   <select id="he"><option value="">설비 전체</option>${eqs.map(e=>`<option ${e===hf.equip?'selected':''} value="${esc(e)}">${esc(e)}</option>`).join('')}</select>
+   <select id="hs"><option value="">상태 전체</option><option value="__open" ${hf.status==='__open'?'selected':''}>미조치(진행중)</option><option value="__done" ${hf.status==='__done'?'selected':''}>조치완료</option></select>
+   <input type="date" id="hfrom" value="${hf.from}"> ~ <input type="date" id="hto" value="${hf.to}">
+   <button class="btn" id="hreset">초기화</button><button class="btn" id="hcsv">CSV 저장</button></div>
+   <div id="hres"></div></div>`;
+  const apply=()=>{
+    hf={q:$('#hq').value,equip:$('#he').value,status:$('#hs').value,from:$('#hfrom').value,to:$('#hto').value,cat:hf.cat,act:hf.act};
+    const bc=filtered('cat'),ba=filtered('act'),L=filtered(),cc={},ac={};
+    bc.forEach(r=>{const c=phenOf(r);cc[c]=(cc[c]||0)+1});
+    ba.forEach(r=>{const a=actOf(r)||'__none';ac[a]=(ac[a]||0)+1});
+    const pc=[['','전체',bc.length]].concat(phenNames().filter(n=>cc[n]).map(n=>[n,n,cc[n]]));
+    const aC=[['','전체',ba.length]].concat(actNames().filter(n=>ac[n]).map(n=>[n,n,ac[n]]),ac.__none?[['__none','조치 없음(공란)',ac.__none]]:[]);
+    const chipRow=(k,label,arr)=>`<div class="chips"><span class="muted" style="align-self:center;min-width:58px">${label}</span>${arr.map(([v,l,n])=>`<button type="button" class="chip${hf[k]===v?' on':''}" data-k="${k}" data-v="${esc(v)}">${esc(l)}<b>${n}</b></button>`).join('')}</div>`;
+    $('#hres').innerHTML=chipRow('cat','현상',pc)+chipRow('act','조치방법',aC)+
+      `<p class="muted">${L.length}건 <span style="margin-left:6px">· 현상은 첫 줄(최초 발생 내용), 조치방법은 조치가 적힌 줄에서 키워드로 자동 판정합니다. 조치 전이면 공란입니다. (수정 창에서 직접 바꿀 수 있고, 규칙은 백업/설정 탭에서 편집)</span></p><div class="tbl"><table><tr><th>날짜</th><th>설비명</th><th>현상</th><th>조치방법</th><th>상태</th><th>내용</th></tr>`+
+      L.slice(0,limit).map(r=>`<tr class="clk" data-id="${r.id}" style="cursor:pointer"><td style="white-space:nowrap">${r.date}</td><td>${esc(r.equip)}</td><td>${phenBadge(r)}</td><td>${actBadge(r)}</td><td>${badge(r)}</td><td class="c">${esc(r.content)}</td></tr>`).join('')+`</table></div>`+(L.length>limit?`<p><button class="btn" id="more">더 보기 (+300)</button></p>`:'');
+    document.querySelectorAll('#hres .chip').forEach(b=>b.onclick=()=>{hf[b.dataset.k]=b.dataset.v;limit=300;apply()});
+    document.querySelectorAll('#hres tr.clk').forEach(e=>e.onclick=()=>openDlg(e.dataset.id));
+    const m=$('#more');if(m)m.onclick=()=>{limit+=300;apply()};
+  };
+  ['hq','he','hs','hfrom','hto'].forEach(i=>$('#'+i).oninput=()=>{limit=300;apply()});
+  $('#hreset').onclick=()=>{hf={q:'',equip:'',status:'',from:'',to:'',cat:'',act:''};rHist()};
+  $('#hcsv').onclick=()=>exportCSV(filtered());
+  apply();
+}
+function filtered(skip){const q=hf.q.toLowerCase().trim();
+  return db.records.filter(r=>(!q||(r.content+' '+r.equip+' '+r.status).toLowerCase().includes(q))&&(!hf.equip||r.equip===hf.equip)&&(skip==='cat'||!hf.cat||phenOf(r)===hf.cat)&&(skip==='act'||!hf.act||(actOf(r)||'__none')===hf.act)&&
+    (!hf.status||(hf.status==='__open'?isOpen(r):!isOpen(r)))&&(!hf.from||r.date>=hf.from)&&(!hf.to||r.date<=hf.to))
+    .sort((a,b)=>a.date<b.date?1:a.date>b.date?-1:0)}
+
+/* ---------- 가져오기 ---------- */
+let imp={rows:null,sheets:null,wb:null};
+function rImp(){
+  $('#v-imp').innerHTML=`<div class="card"><h2>1. 엑셀 파일 올리기 또는 내용 붙여넣기</h2>
+   <div class="drop" id="drop">엑셀 파일(.xlsx / .xls / .csv)을 여기에 끌어놓거나<br><input type="file" id="file" accept=".xlsx,.xls,.csv" style="margin-top:8px"></div>
+   <p class="muted" style="margin:6px 0">또는 엑셀에서 셀을 복사(Ctrl+C)해서 아래에 붙여넣기(Ctrl+V) 하세요. <b>제목 줄(날짜, 설비명 …)까지 같이</b> 복사하면 자동으로 열을 찾아줍니다.</p>
+   <textarea id="paste" placeholder="여기에 붙여넣기"></textarea>
+   <div class="row" style="margin-top:8px"><button class="btn pri" id="parse">붙여넣은 내용 읽기</button><span id="sheetSel"></span></div>
+   <div id="impMsg"></div></div>
+   <div id="mapArea"></div>`;
+  const f=$('#file'),dr=$('#drop');
+  f.onchange=()=>f.files[0]&&readFile(f.files[0]);
+  dr.ondragover=e=>{e.preventDefault();dr.classList.add('hov')};dr.ondragleave=()=>dr.classList.remove('hov');
+  dr.ondrop=e=>{e.preventDefault();dr.classList.remove('hov');e.dataTransfer.files[0]&&readFile(e.dataTransfer.files[0])};
+  $('#parse').onclick=()=>{const t=$('#paste').value;if(!norm(t)){alert('붙여넣은 내용이 없습니다.');return}setRows(parseTSV(t))};
+  if(imp.rows)drawMap();
+}
+function readFile(file){
+  if(typeof XLSX==='undefined'){
+    if(/\.csv$/i.test(file.name)){const r=new FileReader();r.onload=()=>setRows(parseTSV(r.result.replace(/,(?=(?:[^"]*"[^"]*")*[^"]*$)/g,'\t')));r.readAsText(file);return}
+    alert('엑셀 읽기 도구를 불러오지 못했습니다(인터넷 연결 필요).\n엑셀에서 셀을 복사해서 붙여넣기 방식으로 사용해 주세요.');return}
+  const r=new FileReader();
+  r.onload=()=>{try{
+    imp.wb=XLSX.read(new Uint8Array(r.result),{type:'array',cellDates:true});
+    const names=imp.wb.SheetNames;
+    $('#sheetSel').innerHTML=names.length>1?`시트 선택: <select id="sheet">${names.map(n=>`<option>${esc(n)}</option>`).join('')}</select>`:'';
+    const load=n=>setRows(XLSX.utils.sheet_to_json(imp.wb.Sheets[n],{header:1,raw:true,defval:''}).filter(r=>r.some(x=>norm(x)!=='')));
+    if(names.length>1)$('#sheet').onchange=e=>load(e.target.value);
+    load(names[0]);
+  }catch(e){alert('파일을 읽지 못했습니다: '+e.message)}};
+  r.readAsArrayBuffer(file);
+}
+function setRows(rows){imp.rows=rows;imp.hdr=true;drawMap()}
+function guess(hdr){
+  const pat={date:/날짜|일자|일시|date/i,equip:/설비|장비|eqp|equip/i,status:/상태|status|조치\s*여부/i,content:/내용|특이|조치|비고|content/i};
+  const g={};for(const k in pat){g[k]=hdr.findIndex((h,i)=>pat[k].test(String(h))&&!Object.values(g).includes(i))}
+  return g;
+}
+function drawMap(){
+  const rows=imp.rows;if(!rows||!rows.length){$('#mapArea').innerHTML='';$('#impMsg').innerHTML='<p>읽은 데이터가 없습니다.</p>';return}
+  const hdr=rows[0].map(x=>norm(x)),g=guess(hdr),cols=Math.max(...rows.slice(0,50).map(r=>r.length));
+  const opt=(sel,none)=>`<option value="-1">${none||'(선택 안 함)'}</option>`+Array.from({length:cols},(_,i)=>`<option value="${i}" ${i===sel?'selected':''}>${i+1}열: ${esc(hdr[i]||'')}</option>`).join('');
+  $('#mapArea').innerHTML=`<div class="card"><h2>2. 열 연결 확인</h2>
+   <label><input type="checkbox" id="hasHdr" checked> 첫 줄은 제목 줄입니다</label>
+   <div class="map">
+    <div><label>날짜 *</label><select id="mDate">${opt(g.date)}</select></div>
+    <div><label>설비명 *</label><select id="mEquip">${opt(g.equip)}</select></div>
+    <div><label>현재상태</label><select id="mStatus">${opt(g.status)}</select></div>
+    <div><label>내용 *</label><select id="mContent">${opt(g.content)}</select></div>
+    <div><label>내용에 이어붙일 열 (선택)</label><select id="mContent2">${opt(-1)}</select></div></div>
+   <div id="prev"></div></div>`;
+  $('#hasHdr').onchange=e=>{imp.hdr=e.target.checked;prev()};
+  ['mDate','mEquip','mStatus','mContent','mContent2'].forEach(i=>$('#'+i).onchange=prev);
+  prev();
+}
+function build(){
+  const v=i=>+$('#'+i).value,rows=imp.hdr?imp.rows.slice(1):imp.rows,out=[],bad=[];
+  rows.forEach((r,n)=>{
+    const date=parseDate(r[v('mDate')]),equip=v('mEquip')<0?'':norm(r[v('mEquip')]),
+      status=v('mStatus')<0?'':norm(r[v('mStatus')]);
+    let content=v('mContent')<0?'':String(r[v('mContent')]??'').trim();
+    if(v('mContent2')>=0){const c2=String(r[v('mContent2')]??'').trim();if(c2)content+=(content?'\n':'')+c2}
+    if(!date||!equip||!content){bad.push(n+(imp.hdr?2:1));return}
+    out.push({date,equip,status,content});
+  });
+  return {out,bad};
+}
+function plan(out){
+  const map=new Map(db.records.map(r=>[keyOf(r.date,r.equip,r.content),r]));
+  const add=[],upd=[],dup=[];
+  out.forEach(o=>{const k=keyOf(o.date,o.equip,o.content),ex=map.get(k);
+    if(!ex){add.push(o);map.set(k,o)}
+    else if(db.records.includes(ex)&&((o.status&&norm(ex.status)!==o.status)||norm(ex.content)!==norm(o.content)))upd.push([ex,o]);
+    else dup.push(o)});
+  return {add,upd,dup};
+}
+function prev(){
+  if($('#mDate').value<0||$('#mEquip').value<0||$('#mContent').value<0){$('#prev').innerHTML='<p class="muted">날짜, 설비명, 내용 열을 선택해 주세요.</p>';return}
+  const {out,bad}=build(),p=plan(out);
+  $('#prev').innerHTML=`<p>읽은 행 <b>${out.length}</b>건 → <b style="color:var(--done)">새로 추가 ${p.add.length}건</b> · 상태/내용 갱신 ${p.upd.length}건 · 중복 건너뜀 ${p.dup.length}건${bad.length?` · <span style="color:var(--danger)">읽을 수 없는 행 ${bad.length}건 (날짜/설비명/내용 비어있음) — 행 번호: ${bad.slice(0,15).join(', ')}${bad.length>15?' …':''}</span>`:''}</p>
+   <div class="tbl"><table><tr><th>날짜</th><th>설비명</th><th>상태</th><th>내용</th></tr>${out.slice(0,5).map(o=>`<tr><td>${o.date}</td><td>${esc(o.equip)}</td><td>${esc(o.status)}</td><td class="c">${esc(o.content.slice(0,150))}</td></tr>`).join('')}</table></div>
+   <p class="muted">위는 앞 5건 미리보기입니다. 날짜가 틀리게 보이면 열 선택을 확인하세요.</p>
+   <button class="btn pri" id="commit" ${p.add.length+p.upd.length?'':'disabled'}>DB에 저장하기</button>`;
+  $('#commit').onclick=()=>{
+    const now=new Date().toISOString();
+    p.add.forEach(o=>db.records.push({id:uid(),date:o.date,equip:o.equip,status:o.status,content:o.content,created:now,log:[]}));
+    p.upd.forEach(([ex,o])=>{ex.log=ex.log||[];if(o.status&&norm(ex.status)!==o.status)ex.log.push({at:now,from:ex.status,to:o.status});if(o.status)ex.status=o.status;ex.content=o.content});
+    save();imp.rows=null;show('imp');
+    $('#impMsg').innerHTML=`<div class="msg">저장 완료: 새로 추가 ${p.add.length}건, 상태/내용 갱신 ${p.upd.length}건, 중복 ${p.dup.length}건 건너뜀</div>`;
+  };
+}
+
+/* ---------- 백업/설정 ---------- */
+function rSet(){
+  $('#v-set').innerHTML=`<div class="card"><h2>백업 / 복원</h2>
+   <p class="muted">데이터는 이 PC의 이 브라우저에 저장됩니다. 브라우저 기록을 지우면 사라질 수 있으니 주기적으로 백업 파일을 내려받으세요. 다른 PC로 옮길 때도 사용합니다.</p>
+   <div class="row"><button class="btn pri" id="bk">백업 파일 내보내기 (.json)</button>
+   <button class="btn" id="csv">전체 CSV(엑셀용) 내보내기</button></div>
+   <div class="row"><span>백업 파일 불러오기:</span><input type="file" id="rf" accept=".json">
+   <label><input type="radio" name="rm" value="merge" checked> 기존 데이터에 합치기(중복 제외)</label>
+   <label><input type="radio" name="rm" value="replace"> 전부 덮어쓰기</label></div></div>
+   <div class="card"><h2>'조치완료'로 보는 상태 단어</h2>
+   <p class="muted">현재상태 칸에 아래 단어 중 하나라도 들어 있으면 조치완료, 그 외(빈칸 포함)는 미조치(진행중)로 봅니다. 쉼표로 구분합니다.</p>
+   <div class="row"><input id="dw" value="${esc(db.settings.doneWords)}" style="flex:1;min-width:240px"><button class="btn" id="dws">적용</button></div></div>
+   <div class="card"><h2>현상 자동 분류 규칙 (특이사항)</h2>
+   <p class="muted">한 줄에 한 분류씩 <b>분류명: 키워드, 키워드 …</b> 형식입니다. <b>내용의 첫 줄(최초 발생 내용)</b>에 키워드가 많이 들어 있는 분류로 정해집니다. 동점이면 위쪽 분류가 우선이며, 아무것도 안 맞으면 '기타'입니다. 영문 키워드는 대소문자를 구분하지 않습니다. 수정 창에서 직접 지정한 분류는 규칙보다 우선합니다.</p>
+   <textarea id="cr" style="min-height:160px">${esc(db.settings.phenRules||DEF_PHEN)}</textarea>
+   <div class="row" style="margin:8px 0 0"><button class="btn pri" id="crs">규칙 적용</button><button class="btn" id="crd">기본값으로 되돌리기</button></div></div>
+   <div class="card"><h2>조치방법 자동 분류 규칙 (해결 방법)</h2>
+   <p class="muted">형식은 위와 같습니다. 내용 중 <b>조치가 적힌 줄</b>에서 키워드가 많이 들어 있는 분류로 정해집니다. 단, '요청 · 협의 · 조율 · 예정 · 필요 · 전까지 · 검토'가 들어 있는 줄은 아직 하지 않은 일로 보고 제외합니다. 어떤 키워드도 안 맞으면(=조치 전) <b>공란</b>입니다.</p>
+   <textarea id="ca" style="min-height:160px">${esc(db.settings.actRules||DEF_ACT)}</textarea>
+   <div class="row" style="margin:8px 0 0"><button class="btn pri" id="cas">규칙 적용</button><button class="btn" id="cad">기본값으로 되돌리기</button></div></div>
+   <div class="card"><h2>전체 삭제</h2><button class="btn dng" id="wipe">모든 이력 삭제</button></div>`;
+  $('#bk').onclick=()=>download('chemical-monitor-backup-'+today()+'.json',JSON.stringify(db),'application/json');
+  $('#csv').onclick=()=>exportCSV(db.records.slice().sort((a,b)=>a.date<b.date?1:-1));
+  $('#dws').onclick=()=>{db.settings.doneWords=$('#dw').value||DEF_DONE;save();alert('적용되었습니다.')};
+  [['cr','crs','crd','phenRules',DEF_PHEN],['ca','cas','cad','actRules',DEF_ACT]].forEach(([ta,sb,rb,key,def])=>{
+    $('#'+sb).onclick=()=>{const t=$('#'+ta).value.trim();db.settings[key]=(t&&t!==def)?t:undefined;if(!t)$('#'+ta).value=def;save();alert('적용되었습니다. 이력 조회에서 분류가 다시 계산됩니다.')};
+    $('#'+rb).onclick=()=>{if(confirm('규칙을 기본값으로 되돌릴까요?')){delete db.settings[key];save();rSet()}};
+  });
+  $('#wipe').onclick=()=>{if(confirm('모든 이력을 삭제할까요? 되돌릴 수 없습니다. (먼저 백업을 권장합니다)')){db.records=[];save();render()}};
+  $('#rf').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{
+    const p=JSON.parse(r.result);if(!Array.isArray(p.records))throw new Error('백업 파일 형식이 아닙니다.');
+    if(document.querySelector('[name=rm]:checked').value==='replace'){db.records=p.records}
+    else{const ks=new Set(db.records.map(x=>keyOf(x.date,x.equip,x.content)));let n=0;
+      p.records.forEach(x=>{const k=keyOf(x.date,x.equip,x.content);if(!ks.has(k)){db.records.push(x);ks.add(k);n++}});alert(n+'건을 합쳤습니다.')}
+    if(p.settings)db.settings=Object.assign(db.settings,p.settings);save();render();
+  }catch(err){alert('불러오기 실패: '+err.message)}};r.readAsText(f)};
+}
+function download(name,text,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000)}
+function exportCSV(L){
+  const q=s=>'"'+String(s??'').replace(/"/g,'""')+'"';
+  const t=['날짜,설비명,현상,조치방법,현재상태,내용'].concat(L.map(r=>[r.date,r.equip,phenOf(r),actOf(r),r.status,r.content].map(q).join(','))).join('\r\n');
+  download('chemical-monitor-'+today()+'.csv','﻿'+t,'text/csv');
+}
+
+/* ---------- 입력/수정 창 ---------- */
+let editId=null;
+function openDlg(id){
+  editId=id||null;const r=id?db.records.find(x=>x.id===id):null;
+  $('#dlgTitle').textContent=r?'이력 수정':'이력 직접 입력';
+  $('#fDate').value=r?r.date:today();$('#fEquip').value=r?r.equip:'';$('#fStatus').value=r?r.status:'진행중';$('#fContent').value=r?r.content:'';
+  const fc=$('#fCat'),fa=$('#fAct');
+  const fill=()=>{const cur={content:$('#fContent').value},ph=autoPhen(cur),ac=autoAct(cur),pv=fc.value,av=fa.value;
+    fc.innerHTML=`<option value="">자동 (현재: ${esc(ph)})</option>`+phenNames().map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');
+    fa.innerHTML=`<option value="">자동 (현재: ${esc(ac||'공란')})</option><option value="__none">공란 (조치 없음)</option>`+actNames().map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');
+    fc.value=pv;fa.value=av};
+  fill();fc.value=(r&&r.cat)||'';fa.value=(r&&r.act)||'';$('#fContent').oninput=fill;
+  $('#fDel').style.display=r?'':'none';
+  $('#fHistory').innerHTML=r&&r.log&&r.log.length?'<b>상태 변경 이력</b><br>'+r.log.map(l=>`${l.at.slice(0,10)} : ${esc(l.from||'(없음)')} → ${esc(l.to)}`).join('<br>'):'';
+  $('#dlg').showModal();
+}
+$('#addBtn').onclick=()=>openDlg();
+$('#fCancel').onclick=()=>$('#dlg').close();
+$('#fDel').onclick=()=>{if(confirm('이 이력을 삭제할까요?')){db.records=db.records.filter(x=>x.id!==editId);save();$('#dlg').close();render()}};
+$('#dlgForm').onsubmit=e=>{e.preventDefault();
+  const d={date:$('#fDate').value,equip:norm($('#fEquip').value),status:norm($('#fStatus').value),content:$('#fContent').value.trim()};
+  if(!d.date||!d.equip||!d.content)return;
+  d.cat=$('#fCat').value||undefined;d.act=$('#fAct').value||undefined;
+  if(editId){const r=db.records.find(x=>x.id===editId);
+    if(norm(r.status)!==d.status){r.log=r.log||[];r.log.push({at:new Date().toISOString(),from:r.status,to:d.status})}
+    Object.assign(r,d)}
+  else db.records.push(Object.assign({id:uid(),created:new Date().toISOString(),log:[]},d));
+  save();$('#dlg').close();render()};
+render();
+</script>
+</body>
+</html>

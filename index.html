@@ -114,7 +114,7 @@ const LS='chemMonitorDB_v1';
 const DEF_DONE='완료,종결,해결,정상,close,done,complete';
 // 자동 분류 기본 규칙: "분류명: 키워드, 키워드 ..." (한 줄에 한 분류). 동점이면 위쪽 분류 우선.
 const mkRules=a=>a.map(x=>x[0]+': '+x[1]).join('\n');
-// 현상: 내용의 첫 줄(최초 발생 내용)만 보고 판정
+// 현상: 내용에서 가장 오래된 줄(최초 발생 내용)만 보고 판정. 보통 최신이 위라서 맨 아랫줄입니다.
 const DEF_PHEN=mkRules([
  ['감도·Signal 저하/Drift','감도,drift,신호,회수율,internal standard,is,rsd,급감'],
  ['간섭·검량 이상','검량,r²,간섭,bec,collision,매질'],
@@ -141,8 +141,19 @@ const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const norm=s=>String(s??'').replace(/\s+/g,' ').trim();
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
-// 같은 건 판정: 날짜+설비+내용의 첫 줄(최초 발생 내용). 내용이 아래로 쌓여도 같은 건으로 인식
-const keyOf=(d,e,c)=>[d,norm(e).toLowerCase(),norm(String(c??'').split('\n')[0]).toLowerCase()].join('|');
+// 내용에서 '최초 발생 줄' 찾기. 줄 앞의 (월/일)로 순서를 판단: 맨 위 줄이 더 오래됐으면 시간순(위=최초), 아니면 최신이 위(아래=최초).
+// 날짜가 없거나 같으면 맨 아랫줄을 최초 발생으로 봅니다(보통 최신이 위).
+const MD=/^\s*\(\s*(\d{1,2})\s*[\/.\-]\s*(\d{1,2})\s*\)/;
+function originLine(content){
+  const ls=String(content??'').split('\n').map(l=>l.trim()).filter(Boolean);
+  if(ls.length<2)return ls[0]||'';
+  const v=l=>{const m=l.match(MD);return m?(+m[1])*31+(+m[2]):null};
+  const a=v(ls[0]),b=v(ls[ls.length-1]);
+  if(a!=null&&b!=null){const d=(((b-a+186)%372)+372)%372-186;if(d>0)return ls[0]}
+  return ls[ls.length-1];
+}
+// 같은 건 판정: 날짜+설비+최초 발생 줄. 내용이 위/아래로 쌓여도 같은 건으로 인식
+const keyOf=(d,e,c)=>[d,norm(e).toLowerCase(),norm(originLine(c)).toLowerCase()].join('|');
 const doneWords=()=>db.settings.doneWords.split(',').map(s=>s.trim().toLowerCase()).filter(Boolean);
 const isOpen=r=>{const s=norm(r.status).toLowerCase();return !doneWords().some(w=>s.includes(w))};
 /* ---------- 자동 분류 (현상 / 조치방법) ---------- */
@@ -164,7 +175,7 @@ function bestOf(rules,text,none){   // 키워드가 가장 많이 들어 있는 
   for(const c of rules){let s=0;for(const w of c.ws)if(w.re?w.re.test(text):text.includes(w.s))s++;if(s>bs){bs=s;best=c.name}}
   return best;
 }
-const autoPhen=r=>bestOf(phenRules(),String(r.content||'').split('\n')[0].toLowerCase(),OTHER);
+const autoPhen=r=>bestOf(phenRules(),originLine(r.content).toLowerCase(),OTHER);
 const autoAct=r=>bestOf(actRules(),String(r.content||'').split('\n').filter(l=>l.trim()&&!PENDING.test(l)).join('\n').toLowerCase(),'');
 const phenOf=r=>r.cat&&phenNames().includes(r.cat)?r.cat:autoPhen(r);
 const actOf=r=>r.act==='__none'?'':(r.act&&actNames().includes(r.act)?r.act:autoAct(r));
@@ -300,7 +311,7 @@ function rHist(){
     const aC=[['','전체',ba.length]].concat(actNames().filter(n=>ac[n]).map(n=>[n,n,ac[n]]),ac.__none?[['__none','조치 없음(공란)',ac.__none]]:[]);
     const chipRow=(k,label,arr)=>`<div class="chips"><span class="muted" style="align-self:center;min-width:58px">${label}</span>${arr.map(([v,l,n])=>`<button type="button" class="chip${hf[k]===v?' on':''}" data-k="${k}" data-v="${esc(v)}">${esc(l)}<b>${n}</b></button>`).join('')}</div>`;
     $('#hres').innerHTML=chipRow('cat','현상',pc)+chipRow('act','조치방법',aC)+
-      `<p class="muted">${L.length}건 <span style="margin-left:6px">· 현상은 첫 줄(최초 발생 내용), 조치방법은 조치가 적힌 줄에서 키워드로 자동 판정합니다. 조치 전이면 공란입니다. (수정 창에서 직접 바꿀 수 있고, 규칙은 백업/설정 탭에서 편집)</span></p><div class="tbl"><table><tr><th>날짜</th><th>설비명</th><th>현상</th><th>조치방법</th><th>상태</th><th>내용</th></tr>`+
+      `<p class="muted">${L.length}건 <span style="margin-left:6px">· 현상은 가장 오래된 줄(최초 발생 내용, 보통 맨 아랫줄), 조치방법은 조치가 적힌 줄에서 키워드로 자동 판정합니다. 조치 전이면 공란입니다. (수정 창에서 직접 바꿀 수 있고, 규칙은 백업/설정 탭에서 편집)</span></p><div class="tbl"><table><tr><th>날짜</th><th>설비명</th><th>현상</th><th>조치방법</th><th>상태</th><th>내용</th></tr>`+
       L.slice(0,limit).map(r=>`<tr class="clk" data-id="${r.id}" style="cursor:pointer"><td style="white-space:nowrap">${r.date}</td><td>${esc(r.equip)}</td><td>${phenBadge(r)}</td><td>${actBadge(r)}</td><td>${badge(r)}</td><td class="c">${esc(r.content)}</td></tr>`).join('')+`</table></div>`+(L.length>limit?`<p><button class="btn" id="more">더 보기 (+300)</button></p>`:'');
     document.querySelectorAll('#hres .chip').forEach(b=>b.onclick=()=>{hf[b.dataset.k]=b.dataset.v;limit=300;apply()});
     document.querySelectorAll('#hres tr.clk').forEach(e=>e.onclick=()=>openDlg(e.dataset.id));
@@ -421,7 +432,7 @@ function rSet(){
    <p class="muted">현재상태 칸에 아래 단어 중 하나라도 들어 있으면 조치완료, 그 외(빈칸 포함)는 미조치(진행중)로 봅니다. 쉼표로 구분합니다.</p>
    <div class="row"><input id="dw" value="${esc(db.settings.doneWords)}" style="flex:1;min-width:240px"><button class="btn" id="dws">적용</button></div></div>
    <div class="card"><h2>현상 자동 분류 규칙 (특이사항)</h2>
-   <p class="muted">한 줄에 한 분류씩 <b>분류명: 키워드, 키워드 …</b> 형식입니다. <b>내용의 첫 줄(최초 발생 내용)</b>에 키워드가 많이 들어 있는 분류로 정해집니다. 동점이면 위쪽 분류가 우선이며, 아무것도 안 맞으면 '기타'입니다. 영문 키워드는 대소문자를 구분하지 않습니다. 수정 창에서 직접 지정한 분류는 규칙보다 우선합니다.</p>
+   <p class="muted">한 줄에 한 분류씩 <b>분류명: 키워드, 키워드 …</b> 형식입니다. <b>내용에서 가장 오래된 줄(최초 발생 내용)</b>에 키워드가 많이 들어 있는 분류로 정해집니다. 동점이면 위쪽 분류가 우선이며, 아무것도 안 맞으면 '기타'입니다. 영문 키워드는 대소문자를 구분하지 않습니다. 수정 창에서 직접 지정한 분류는 규칙보다 우선합니다.</p>
    <textarea id="cr" style="min-height:160px">${esc(db.settings.phenRules||DEF_PHEN)}</textarea>
    <div class="row" style="margin:8px 0 0"><button class="btn pri" id="crs">규칙 적용</button><button class="btn" id="crd">기본값으로 되돌리기</button></div></div>
    <div class="card"><h2>조치방법 자동 분류 규칙 (해결 방법)</h2>
